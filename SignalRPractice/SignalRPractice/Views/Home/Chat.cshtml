@@ -1,0 +1,85 @@
+﻿@model List<AppUser>
+@{
+    ViewData["Title"] = "Chat";
+}
+
+  <div class="container">
+      <div class="row">
+
+              <div class="col-md-6">
+
+                <div class="row">
+                    <div class="col-2">User</div>
+                    @if (User.Identity.IsAuthenticated)
+                   {
+                    <div class="col-4"><input type="text" value="@User.Identity.Name" id="userInput" /></div>
+                }
+                else
+                {
+                    <div class="col-4"><input type="text" value="Bot" id="userInput" /></div>
+                }
+            </div>
+                <div class="row">
+                    <div class="col-2">Message</div>
+                    <div class="col-4"><input type="text" id="messageInput" /></div>
+                </div>
+                <div class="row">
+                    <div class="col-6">
+                        <input type="button" id="sendButton" value="Send Message" />
+                    </div>
+            </div>
+             <div class="row">
+                <div class="col-6">
+                    <ul id="messagesList">
+                    </ul>
+                </div>
+            </div>
+    </div>
+   
+    <div class="col-md-6">
+        <ul class="list-group">
+             @foreach (var item in Model)
+            {
+                    if (User.Identity.Name != item.UserName)
+                    {
+                      <li id="@item.Id" class="list-group-item "> <span class=" @(item.ConnectId==null? "bg-offline":"bg-online")"  style="display:inline-block;height:20px;width:20px; border-radius:50%;"></span>  <a asp-action="PrivateSend" asp-route-id="@item.Id">@item.Fullname</a>   </li>
+                    }
+            }
+     </ul>
+    </div>
+      </div>
+    </div>
+
+    @section Scripts{
+
+      <script src="~/lib/microsoft/signalr/dist/browser/signalr.min.js"></script>
+        <script>
+         var connection = new signalR.HubConnectionBuilder().withUrl("/chat").build();
+         connection.start();
+        
+         $("#sendButton").click(function(){
+             let user=$("#userInput").val();
+             let message=$("#messageInput").val();
+             connection.invoke("SendMessage",user,message)
+         }) 
+
+         connection.on("ReceiveMessage",function(user,message,date){
+          let li = `<li>${date}- ${user}: ${message} </li>`
+            $("#messagesList").append(li);
+         });
+
+         connection.on("Userconnect",function(userId){
+             $(`#${userId}`).find("span").addClass("bg-online");
+              $(`#${userId}`).find("span").removeClass("bg-offline");
+         })
+          connection.on("Userdisconnect",function(userId){
+             $(`#${userId}`).find("span").addClass("bg-offline");
+              $(`#${userId}`).find("span").removeClass("bg-online");
+         })
+         connection.on("PrivateMessage",function(){
+             alert("salam")
+         })
+        
+        
+        </script>
+    }
